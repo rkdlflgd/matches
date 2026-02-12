@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import os
+import sys
 import json
 import asyncio
 import subprocess
@@ -15,6 +16,12 @@ LOGOS_DIR = os.path.join(BASE_DIR, "logos")
 OUTPUT_DIR = os.path.join(BASE_DIR, "Mac")
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads") # Adding uploads as per rules
 os.makedirs(UPLOADS_DIR, exist_ok=True)
+
+# Ensure parent directory is in sys.path for sibling module imports
+BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+for _dir in (BASE_DIR, BACKEND_DIR):
+    if _dir not in sys.path:
+        sys.path.insert(0, _dir)
 
 app = FastAPI(title="Match Automation API")
 
@@ -50,6 +57,9 @@ async def root():
     return {"status": "ok", "message": "Match Automation API is running"}
 
 from automation_engine import run_automation_flow, get_upcoming_fixtures, render_match_psd
+from analytics import router as analytics_router
+
+app.include_router(analytics_router)
 
 @app.post("/api/v1/automation/render")
 async def render_match(data: dict):

@@ -2,7 +2,8 @@
     "sidebar": {
         "automation": "Automation",
         "gallery": "Gallery & Previews",
-        "templates": "Templates"
+        "templates": "Templates",
+        "analytics": "Analytics"
     },
     "automation": {
         "title": "High-Efficiency Production",
@@ -17,6 +18,22 @@
         "engine_center": "AUTOMATION HUB",
         "terminal_ready": "ENGINE STATUS: READY FOR INPUT...",
         "outputs": "READY ASSETS (PNG)"
+    },
+    "analytics": {
+        "title": "System Analytics",
+        "subtitle": "Visitor traffic, click rates, and usage statistics.",
+        "refresh": "Refresh Stats",
+        "total_visits": "Total Visits",
+        "unique_visitors": "Unique Visitors",
+        "today": "Today",
+        "avg_daily": "Daily Avg.",
+        "daily_chart": "30-Day Traffic Flow",
+        "hourly_heatmap": "Hourly Heatmap (7 Days)",
+        "top_referrers": "Top Referrers",
+        "recent_visits": "Recent Activities",
+        "visits": "visits",
+        "no_data": "No data collected yet.",
+        "no_referrers": "No top referrers found."
     },
     "tracker": {
         "title": "Live Fixture Tracker",

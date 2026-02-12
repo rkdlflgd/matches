@@ -24,7 +24,13 @@ import {
   RefreshCcw,
   Trash2,
   Eye,
-  Download
+  Download,
+  BarChart3,
+  Users,
+  Globe,
+  TrendingUp,
+  Clock,
+  Activity
 } from 'lucide-react';
 import axios from 'axios';
 import confetti from 'canvas-confetti';
@@ -120,6 +126,8 @@ const App: React.FC = () => {
   const [logs, setLogs] = useState<any[]>([]);
   const [inputMode, setInputMode] = useState<'manual' | 'live'>('manual');
   const terminalRef = React.useRef<HTMLDivElement>(null);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   useEffect(() => {
     if (terminalRef.current) {
@@ -154,18 +162,44 @@ const App: React.FC = () => {
     localStorage.setItem('lang', newLang);
   };
 
+  // Dynamic API Base URL
+  const API_BASE = import.meta.env.DEV ? 'http://localhost:8000' : '';
+
+  // Track page visit on mount (for Vercel analytics)
+  useEffect(() => {
+    axios.get(`${API_BASE}/api/v1/analytics/track`, {
+      params: { path: window.location.pathname, ref: document.referrer || undefined }
+    }).catch(() => { });
+  }, []);
+
+  const fetchAnalytics = async () => {
+    setAnalyticsLoading(true);
+    try {
+      const response = await axios.get(`${API_BASE}/api/v1/analytics/stats`);
+      if (response.data.status === 'success') {
+        setAnalyticsData(response.data.stats);
+      }
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 0) {
       fetchFixtures();
     } else if (activeTab === 1) {
       fetchPreviews();
+    } else if (activeTab === 3) {
+      fetchAnalytics();
     }
   }, [activeTab]);
 
   const fetchFixtures = async () => {
     setFixturesLoading(true);
     try {
-      const response = await axios.get('http://localhost:8000/api/v1/automation/fixtures');
+      const response = await axios.get(`${API_BASE}/api/v1/automation/fixtures`);
       if (response.data.status === 'success') {
         setFixtures(response.data.fixtures);
       }
@@ -184,7 +218,7 @@ const App: React.FC = () => {
 
   const fetchPreviews = async () => {
     try {
-      const response = await axios.get('http://localhost:8000/api/v1/automation/previews');
+      const response = await axios.get(`${API_BASE}/api/v1/automation/previews`);
       setPreviews(response.data.previews);
     } catch (error) {
       console.error("Error fetching previews:", error);
@@ -196,7 +230,7 @@ const App: React.FC = () => {
 
     try {
       addLog(`SYSTEM: Deleting asset ${filename}...`, 'info');
-      await axios.delete(`http://localhost:8000/api/v1/automation/previews/${filename}`);
+      await axios.delete(`${API_BASE}/api/v1/automation/previews/${filename}`);
       addLog(`SUCCESS: Asset ${filename} removed.`, 'success');
       fetchPreviews();
     } catch (error) {
@@ -210,7 +244,7 @@ const App: React.FC = () => {
     setRenderingMatches(prev => ({ ...prev, [index]: true }));
     addLog(`Rendering started: ${match.home_team} vs ${match.away_team}`, 'info');
     try {
-      const response = await axios.post('http://localhost:8000/api/v1/automation/render', {
+      const response = await axios.post(`${API_BASE}/api/v1/automation/render`, {
         match,
         template: selectedTemplate
       });
@@ -252,7 +286,7 @@ const App: React.FC = () => {
 
     try {
       addLog(`Requesting ${matchInputs.length} matches from automation core...`, 'info');
-      const response = await axios.post('http://localhost:8000/api/v1/automation/execute', {
+      const response = await axios.post(`${API_BASE}/api/v1/automation/execute`, {
         matches: matchInputs,
         boost_odds: false,
         subtract_day_for_night: false
@@ -308,6 +342,10 @@ const App: React.FC = () => {
               <Settings size={18} />
               {t('sidebar.templates')}
             </div>
+            <div className={`nav-item ${activeTab === 3 ? 'active' : ''}`} onClick={() => setActiveTab(3)}>
+              <BarChart3 size={18} />
+              {t('sidebar.analytics')}
+            </div>
           </div>
 
           <Box sx={{ mt: 'auto', p: 2 }}>
@@ -335,10 +373,10 @@ const App: React.FC = () => {
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
             <Box>
               <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-1px' }}>
-                {activeTab === 0 ? t('automation.title') : activeTab === 1 ? t('gallery.title') : t('templates.title')}
+                {activeTab === 0 ? t('automation.title') : activeTab === 1 ? t('gallery.title') : activeTab === 2 ? t('templates.title') : t('analytics.title')}
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                {activeTab === 0 ? t('automation.subtitle') : activeTab === 1 ? t('gallery.subtitle') : t('templates.subtitle')}
+                {activeTab === 0 ? t('automation.subtitle') : activeTab === 1 ? t('gallery.subtitle') : activeTab === 2 ? t('templates.subtitle') : t('analytics.subtitle')}
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', gap: 1.5 }}>
@@ -746,7 +784,144 @@ const App: React.FC = () => {
                 ))}
               </div>
             </div>
-          )}
+          ) : activeTab === 3 ? (
+          <div className="fade-in">
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+              <Button
+                startIcon={<RefreshCcw size={16} />}
+                onClick={fetchAnalytics}
+                variant="outlined"
+                size="small"
+                sx={{ borderColor: '#27272a' }}
+              >
+                {t('analytics.refresh')}
+              </Button>
+            </Box>
+
+            {analyticsLoading ? (
+              <Box sx={{ textAlign: 'center', py: 10 }}><CircularProgress sx={{ color: '#10b981' }} /></Box>
+            ) : analyticsData ? (
+              <>
+                {/* Stat Cards */}
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 3, mb: 4 }}>
+                  {[
+                    { label: t('analytics.total_visits'), value: analyticsData.total_visits, icon: <Globe size={22} />, color: '#10b981' },
+                    { label: t('analytics.unique_visitors'), value: analyticsData.unique_visitors, icon: <Users size={22} />, color: '#06b6d4' },
+                    { label: t('analytics.today'), value: analyticsData.today_visits, icon: <TrendingUp size={22} />, color: '#f59e0b' },
+                    { label: t('analytics.avg_daily'), value: analyticsData.daily.length > 0 ? Math.round(analyticsData.total_visits / Math.max(analyticsData.daily.length, 1)) : 0, icon: <Activity size={22} />, color: '#8b5cf6' }
+                  ].map((stat, i) => (
+                    <Card key={i} sx={{ p: 3, position: 'relative', overflow: 'hidden' }}>
+                      <Box sx={{ position: 'absolute', top: 16, right: 16, opacity: 0.15, color: stat.color }}>{stat.icon}</Box>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', fontSize: '0.65rem' }}>{stat.label}</Typography>
+                      <Typography variant="h3" sx={{ fontWeight: 900, color: stat.color, mt: 1, letterSpacing: '-2px' }}>{stat.value.toLocaleString()}</Typography>
+                    </Card>
+                  ))}
+                </Box>
+
+                {/* Daily Chart + Hourly Heatmap */}
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '2fr 1fr' }, gap: 3, mb: 4 }}>
+                  <Card sx={{ p: 3 }}>
+                    <Typography variant="overline" sx={{ color: '#10b981', fontWeight: 800, display: 'block', mb: 2 }}>{t('analytics.daily_chart')}</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: 180, overflowX: 'auto', pb: 3, position: 'relative' }}>
+                      {analyticsData.daily.length > 0 ? analyticsData.daily.map((d: any, i: number) => {
+                        const max = Math.max(...analyticsData.daily.map((x: any) => x.count), 1);
+                        const h = Math.max((d.count / max) * 150, 4);
+                        return (
+                          <Tooltip key={i} title={`${d.date}: ${d.count} ${t('analytics.visits')}`}>
+                            <Box sx={{
+                              width: analyticsData.daily.length > 20 ? 10 : 24,
+                              minWidth: 6,
+                              height: h,
+                              bgcolor: '#10b981',
+                              borderRadius: '4px 4px 0 0',
+                              opacity: 0.7 + (d.count / max) * 0.3,
+                              transition: 'all 0.2s',
+                              cursor: 'pointer',
+                              '&:hover': { opacity: 1, bgcolor: '#34d399', transform: 'scaleY(1.05)' }
+                            }} />
+                          </Tooltip>
+                        );
+                      }) : (
+                        <Typography variant="body2" sx={{ color: 'text.secondary', m: 'auto' }}>{t('analytics.no_data')}</Typography>
+                      )}
+                    </Box>
+                  </Card>
+
+                  <Card sx={{ p: 3 }}>
+                    <Typography variant="overline" sx={{ color: '#06b6d4', fontWeight: 800, display: 'block', mb: 2 }}>{t('analytics.hourly_heatmap')}</Typography>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '4px' }}>
+                      {Array.from({ length: 24 }, (_, h) => {
+                        const hourData = analyticsData.hourly_heatmap.find((x: any) => x.hour === h);
+                        const count = hourData ? hourData.count : 0;
+                        const maxH = Math.max(...analyticsData.hourly_heatmap.map((x: any) => x.count), 1);
+                        const intensity = count / maxH;
+                        return (
+                          <Tooltip key={h} title={`${String(h).padStart(2, '0')}:00 — ${count} ${t('analytics.visits')}`}>
+                            <Box sx={{
+                              aspectRatio: '1',
+                              borderRadius: '6px',
+                              bgcolor: count === 0 ? 'rgba(255,255,255,0.03)' : `rgba(6, 182, 212, ${0.15 + intensity * 0.85})`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.55rem',
+                              fontWeight: 700,
+                              color: count > 0 ? '#fff' : 'rgba(255,255,255,0.15)',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              '&:hover': { transform: 'scale(1.1)', boxShadow: '0 0 10px rgba(6, 182, 212, 0.3)' }
+                            }}>
+                              {String(h).padStart(2, '0')}
+                            </Box>
+                          </Tooltip>
+                        );
+                      })}
+                    </Box>
+                  </Card>
+                </Box>
+
+                {/* Top Referrers + Recent Visits */}
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 2fr' }, gap: 3 }}>
+                  <Card sx={{ p: 3 }}>
+                    <Typography variant="overline" sx={{ color: '#f59e0b', fontWeight: 800, display: 'block', mb: 2 }}>{t('analytics.top_referrers')}</Typography>
+                    {analyticsData.top_referrers.length > 0 ? analyticsData.top_referrers.map((r: any, i: number) => (
+                      <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.2, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>{r.referrer}</Typography>
+                        <Chip label={r.count} size="small" sx={{ height: 22, fontSize: '0.7rem', fontWeight: 800, bgcolor: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }} />
+                      </Box>
+                    )) : (
+                      <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center', py: 4 }}>{t('analytics.no_referrers')}</Typography>
+                    )}
+                  </Card>
+
+                  <Card sx={{ p: 3 }}>
+                    <Typography variant="overline" sx={{ color: '#8b5cf6', fontWeight: 800, display: 'block', mb: 2 }}>{t('analytics.recent_visits')}</Typography>
+                    <Box sx={{ maxHeight: 300, overflowY: 'auto' }}>
+                      {analyticsData.recent_visits.map((v: any, i: number) => (
+                        <Box key={i} sx={{ display: 'flex', gap: 2, py: 1.2, borderBottom: '1px solid rgba(255,255,255,0.03)', alignItems: 'center' }}>
+                          <Clock size={14} style={{ opacity: 0.4, flexShrink: 0 }} />
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '0.7rem', display: 'block' }}>
+                              {v.ip} — {v.path}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem' }}>
+                              {new Date(v.timestamp).toLocaleString()} • {v.user_agent?.slice(0, 50)}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Card>
+                </Box>
+              </>
+            ) : (
+              <Box sx={{ textAlign: 'center', py: 10, opacity: 0.3 }}>
+                <BarChart3 size={48} />
+                <Typography variant="body2" sx={{ mt: 2 }}>{t('analytics.no_data')}</Typography>
+              </Box>
+            )}
+          </div>
+          ) : null}
         </div>
 
         {/* --- TUTORIAL MODAL --- */}

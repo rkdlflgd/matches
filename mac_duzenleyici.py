@@ -1178,9 +1178,12 @@ if __name__ == "__main__":
     
     print("------------------------------------------------------------\n")
     
-    # OpenAI / Gemini Key (Gömülü)
-    openai_key = "AIzaSyCR1-16foOI5f7r5MkF1DN4ef1zT1ZmNEM"
-    print(f"✅ Gemini Modu Aktif (Key Gömülü).")
+    # OpenAI / Gemini Key (Environment Variable)
+    openai_key = os.getenv("GEMINI_API_KEY")
+    if openai_key:
+        print(f"✅ Gemini Modu Aktif (Env Var).")
+    else:
+        print(f"⚠️ Gemini Key bulunamadı (Environment Variable: GEMINI_API_KEY).")
     print("------------------------------------------------------------\n")
 
     selected_psd = "Maclar.psd"

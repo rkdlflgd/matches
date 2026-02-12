@@ -2,7 +2,8 @@
     "sidebar": {
         "automation": "Otomasyon",
         "gallery": "Galeri & Önizlemeler",
-        "templates": "Şablonlar"
+        "templates": "Şablonlar",
+        "analytics": "Analiz Verileri"
     },
     "automation": {
         "title": "Yüksek Verimli Üretim",
@@ -17,6 +18,22 @@
         "engine_center": "İŞLEM MERKEZİ",
         "terminal_ready": "MOTOR DURUMU: GİRİŞ BEKLENİYOR...",
         "outputs": "HAZIR GÖRSELLER (PNG)"
+    },
+    "analytics": {
+        "title": "Sistem Analitiği",
+        "subtitle": "Ziyaretçi trafiği, tıklama oranları ve kullanım istatistikleri.",
+        "refresh": "Verileri Güncelle",
+        "total_visits": "Toplam Ziyaret",
+        "unique_visitors": "Tekil Ziyaretçi",
+        "today": "Bugün",
+        "avg_daily": "Günlük Ort.",
+        "daily_chart": "30 Günlük Trafik Akışı",
+        "hourly_heatmap": "Saatlik Yoğunluk (7 Gün)",
+        "top_referrers": "En Çok Gelen Kaynaklar",
+        "recent_visits": "Son Aktiviteler",
+        "visits": "ziyaret",
+        "no_data": "Henüz veri toplanmadı.",
+        "no_referrers": "Referans kaynağı yok."
     },
     "tracker": {
         "title": "Canlı Fikstür Takibi",
